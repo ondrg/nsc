@@ -26,7 +26,7 @@ CFLAGS=-std=c99 -Wall -Wextra -pedantic -g
 APP=nsc
 
 # soubory pro vytvoreni archivu
-PACK=$(APP).c Makefile README.txt Doxyfile
+PACK=$(APP).c Makefile *.txt Doxyfile
 
 
 all: $(APP)

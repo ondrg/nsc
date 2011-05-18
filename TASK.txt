@@ -1,0 +1,47 @@
+****************
+* PŘEVOD ČÍSLA *
+****************
+
+== 1. Zadání ==
+
+Vytvořte program, který načte číslo ze standardního vstupu v soustavě se
+základem Z1 a převede jej do soustavy se základem Z2.
+
+== 2. Technická specifikace ==
+
+Vytvořte platformě nezávislou aplikaci, která načte vstupní výraz ve formátu
+[XXX]Z1=Z2, Kde XXX je libovolná (libovolné dlouhá, i několik gigabajtů)
+posloupnost znaků 0-9 případně A-Z přípustných pro číselnou soustavu se
+základem Z1. Z2 je soustava, do níž má být načtené číslo převedeno a vypsáno
+na standardní výstup. Základy soustav Z1 a Z2 mohou byt od 2 až po 36 (znak
+reprezentující hodnotu 35 bude Z)
+
+Příklad vstupního souboru:
+[1012222121310101]4 = 32
+
+Takové číslo uvedené mezi [] reprezentuje hodnotu ve čtyřkové soustavě
+(soustavě se základem 4) a má se převést do soustavy se základem 32.
+
+Program si nemůže vytvářet žádný dočasný soubor a nemůže se v souboru pohybovat
+jinak než sekvenčním načtením tohoto souboru pomocí funkce read.
+
+Program musí být vytvořen v jazyce ANSI C (ne C++). Ze systémových volání nebo
+knihovních funkcí může používat pouze funkce read, write, malloc, free. Žádné
+jiné funkce nejsou povolené (žádné fread, fwrite, getchar, realloc ...).
+
+== 3. Vstup ==
+
+Vstupem je soubor s výrazem [číslo] z1 = z2, který bude přesměrován na
+standardní vstup.
+
+== 4. Výstup ==
+
+Výstupem je číslo v soustavě se základem z2 ve formátu [číslo] z2.
+
+== 5. Hodnocení ==
+
+Hodnotit se bude funkčnost, efektivnost (rychlost běhu i paměťové nároky),
+přehlednost kódu a dokumentace.
+
+Vaše postřehy /analýzy/ řešení zasílejte na následující adresu:
+[numbertransfer@eset.sk]
