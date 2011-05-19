@@ -1,0 +1,35 @@
+*** Zakladni informace ***
+
+Prevody mezi soustavami <2,36>.
+
+
+*** Nejjednodussi prevody ***
+
+
+== Stejna vstupni i vystupni soustava ==
+
+Pokud Z1 == Z2, neni treba nic prevadet.
+
+
+== Mocniny soustavy ==
+
+Ze soustavy Z1 do soustavy Z2 = Z1^(n)
+Staci vzit n cislic ze soustavy Z1 a prevest je do cisla soustavy Z2.
+
+Funguje to i obracene, akorat pak jedno cislo z vyssi soustavy prevadime
+na nekolik cisel z nizsi.
+
+Z   Do
+    2   3   4   5  (cislic)
+2   4   8   16  32
+3   9   27
+4   16
+5   25
+6   36
+
+
+*** Obecne prevody ***
+
+Kteroukoliv soustavu je mozne prevest do jine soustavy pres desitkovou
+soustavu. Tento vypocet je vsak dost narocny (prvne prevod ze Z1 do desitkove,
+pote z desitkove do Z2).

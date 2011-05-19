@@ -7,6 +7,8 @@
 #   - preklad:        make
 #   - spusteni:				make run
 #   - editace:       	make edit
+#		- debugovani: 		make debug
+#		- valgrind:				make valgrind
 #
 #   - dokumentace:		make doc
 #   - zabaleni:       make pack
@@ -39,6 +41,12 @@ run:
 
 edit:
 	vim $(APP).c
+
+debug:
+	ddd ./$(APP)
+
+valgrind:
+	valgrind ./$(APP)
 
 
 doc:
