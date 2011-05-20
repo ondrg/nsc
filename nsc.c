@@ -153,6 +153,28 @@ TNumBlock *addNewNumBlock(TNum *list)
 
 
 /**
+ * Zrusi numBlock a opravi navaznosti seznamu
+ * @param numBlock Ukazatel na numBlock ke zruseni.
+ * @param list Ukazatel na strukturu TNum.
+ */
+void destroyNumBlock(TNumBlock *numBlock, TNum *list)
+{
+  if (numBlock->prev != NULL)  /* existuje predchozi prvek */
+    numBlock->prev->next = numBlock->next;
+  if (numBlock->next != NULL)  /* existuje nasledujici prvek */
+    numBlock->next->prev = numBlock->prev;
+
+  /** Odstraneni z ukazatele na seznam */
+  if (numBlock == list->first)
+    list->first = NULL;
+  if (numBlock == list->last)
+    list->last = NULL;
+
+  free(numBlock);
+}
+
+
+/**
  * Zrusi seznam a uvolni veskerou pamet.
  * @param list Ukazatel na strukturu TNum.
  */
@@ -296,6 +318,7 @@ int convertNumberBases(void)
           destroyList(&list);
           return EINPUT;
         }
+        /* TODO Nacitani posledniho znaku je podezrele => proverit! */
         if ((i + 1) >= readBytes) {  /* neni co cist */
           destroyList(&list);
           return EINPUT;
@@ -326,7 +349,11 @@ int convertNumberBases(void)
     return EOUTPUTBASE;
   }
 
-  /** Konverze do vystpuni ciselne soustavy */
+  /* TODO Chybi osetreni vstupnich cisel dane soustavy ([123]2=10 je chyba) */
+
+  write(STDOUT, "[", 1);  /* zacatek cisla */
+
+  /** Konverze do vystupni ciselne soustavy a vypis na standardni vystup */
   if (inputNumberBase == outputNumberBase) {  /* ciselne soutavy jsou stejne */
     numBlock = list.first;
     while (numBlock != NULL) {
@@ -338,12 +365,25 @@ int convertNumberBases(void)
       }
       write(STDOUT, buf, numBlock->numCount);
       numBlock = numBlock->next;
+
+      if (numBlock != NULL)  /* zruseni zpracovaneho bloku */
+        destroyNumBlock(numBlock->prev, &list);
     }
   }
 
-  write(STDOUT, "\n", 1);  /* odradkovani */
-
   destroyList(&list);
+
+  write(STDOUT, "]", 1);  /* konec cisla */
+  if (outputNumberBase < 10) {  /* jednociferna soustava */
+    buf[0] = (char) (outputNumberBase + '0');
+    write(STDOUT, buf, 1);
+  }
+  else {  /* dvouciferna soustava */
+    buf[0] = (char) ((outputNumberBase / 10) + '0');
+    buf[1] = (char) ((outputNumberBase - ((int) (buf[0] - '0') * 10)) + '0');
+    write(STDOUT, buf, 2);
+  }
+  write(STDOUT, "\n", 1);  /* odradkovani */
 
   return EOK;
 }
