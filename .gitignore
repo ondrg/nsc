@@ -1,1 +1,3 @@
 nsc
+.*.swp
+tests/*

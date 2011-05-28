@@ -33,3 +33,17 @@ Z   Do
 Kteroukoliv soustavu je mozne prevest do jine soustavy pres desitkovou
 soustavu. Tento vypocet je vsak dost narocny (prvne prevod ze Z1 do desitkove,
 pote z desitkove do Z2).
+
+*** Odkazy ***
+
+Zajimave:
+http://www.codeproject.com/KB/recipes/BaseConverter.aspx
+http://forums.xkcd.com/viewtopic.php?f=12&t=69664
+
+Mene zajimave:
+http://www.algoritmy.net/article/80/Prevod-cisla-mezi-soustavami
+
+Mozna zajimave:
+http://cs.wikipedia.org/wiki/Pozi%C4%8Dn%C3%AD_%C4%8D%C3%ADseln%C3%A1_soustava
+http://en.wikipedia.org/wiki/Binary-coded_decimal
+http://en.wikipedia.org/wiki/Huffman_coding

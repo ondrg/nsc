@@ -25,6 +25,9 @@
 #define STDOUT 1  /**< standardni vystup */
 #define STDERR 2  /**< standardni chybovy vystup */
 
+#define MIN_NUMBER_BASE 2   /**< minimalni ciselna soustava (min. je 2) */
+#define MAX_NUMBER_BASE 36  /**< maximalni ciselna soustava (max. je 36) */
+
 #define NUM_BLOCK_SIZE 120  /**< velikost bloku cisel (cislo delitelne 60) */
 
 #define TRUE 1
@@ -75,8 +78,8 @@ const char *MSG[] = {
   "ERROR! Cannot allocate memory.",
   "ERROR! Read from standard input failed.",
   "ERROR! Bad format of input data.",
-  "ERROR! Input radix is out of range <2,36>.",
-  "ERROR! Output radix is out of range <2,36>.",
+  "ERROR! Input radix is out of range.",
+  "ERROR! Output radix is out of range.",
   "ERROR! Unknown error.",
 };
 
@@ -198,6 +201,37 @@ void destroyList(TNum *list)
 
 
 /**
+ * Vypocita jestli je jedna ciselna soustava mocninou druhe ciselne soustavy
+ * @param baseOne Prvni ciselna soustava.
+ * @param baseTwo Druha ciselna soustava.
+ * @return x-ta mocnina, jinak FALSE.
+ */
+short isPowerOfNumberBase(unsigned short baseOne, unsigned short baseTwo)
+{
+  /** baseOne musi byt mensi nebo stejna nez baseTwo */
+  if (baseOne > baseTwo) {
+    /* prohozeni promennych pomoci operace XOR */
+    baseTwo = baseOne ^ baseTwo;
+    baseOne = baseTwo ^ baseOne;
+    baseTwo = baseOne ^ baseTwo;
+  }
+
+  /** zjisteni urovne mocniny */
+  unsigned int power = baseOne;
+  unsigned short xPower = 1;
+  while (power <= MAX_NUMBER_BASE) {
+    if (power == baseTwo)
+      return xPower;
+
+    power *= baseOne;
+    xPower++;
+  }
+
+  return FALSE;
+}
+
+
+/**
  * Overi, jestli je dany znak cislo
  * @param ch Znak.
  * @return TRUE = je cislo, FALSE = neni cislo
@@ -249,6 +283,8 @@ int convertNumberBases(void)
 
   unsigned short inputNumberBase = 0;  /**< vstupni ciselna soustava */
   unsigned short outputNumberBase = 0;  /**< vystupni ciselna soustava */
+  uint64_t numbersCount = 0;  /**< pocet celkove nactenych cisel */
+  int i;  /**< iterator cyklu for */
 
   /** Nacitani vstpunich dat */
   while ((readBytes = read(STDIN, buf, NUM_BLOCK_SIZE)) != 0) {
@@ -264,12 +300,16 @@ int convertNumberBases(void)
     }
 
     /** Zpracovani vsech nactenych znaku */
-    for (int i = 0; i < readBytes; i++) {
+    for (i = 0; i < readBytes; i++) {
 
-      if (isNumber(buf[i]))  /* nacitame cislo */
+      if (isNumber(buf[i])) {  /* nacitame cislo */
         numBlock->num[numBlock->numCount++] = (uint8_t) (buf[i] - '0');
-      else if (isLetter(buf[i]))  /* nacitame pismeno */
+        numbersCount++;
+      }
+      else if (isLetter(buf[i])) {  /* nacitame pismeno */
         numBlock->num[numBlock->numCount++] = (uint8_t) (buf[i] - 'A' + 10);
+        numbersCount++;
+      }
       else if (buf[i] == ']') {  /* konec nacitaneho cisla */
         /* TODO Nacteni zadanych ciselnych soustav neni idealni! */
 
@@ -340,16 +380,20 @@ int convertNumberBases(void)
   }
 
   /** Kontrola rozmezi vstupni a vystupni ciselne soustavy */
-  if (inputNumberBase < 2 || inputNumberBase > 36) {
+  if (inputNumberBase < MIN_NUMBER_BASE ||
+      inputNumberBase > MAX_NUMBER_BASE) {
     destroyList(&list);
     return EINPUTBASE;
   }
-  if (outputNumberBase < 2 || outputNumberBase > 36) {
+  if (outputNumberBase < MIN_NUMBER_BASE ||
+      outputNumberBase > MAX_NUMBER_BASE) {
     destroyList(&list);
     return EOUTPUTBASE;
   }
 
   /* TODO Chybi osetreni vstupnich cisel dane soustavy ([123]2=10 je chyba) */
+
+  short power = 0;  /**< mocnina soutavy */
 
   write(STDOUT, "[", 1);  /* zacatek cisla */
 
@@ -357,11 +401,49 @@ int convertNumberBases(void)
   if (inputNumberBase == outputNumberBase) {  /* ciselne soutavy jsou stejne */
     numBlock = list.first;
     while (numBlock != NULL) {
-      for (unsigned i = 0; i < numBlock->numCount; i++) {
+      for (i = 0; i < (int) numBlock->numCount; i++) {
+        if (numBlock->num[i] > inputNumberBase) {  /* cislo neni v soustave */
+          destroyList(&list);
+          return EINPUT;
+        }
         if (numBlock->num[i] < 10)
           buf[i] = (char) (numBlock->num[i] + '0');
         else
           buf[i] = (char) (numBlock->num[i] + 'A' - 10);
+      }
+      write(STDOUT, buf, numBlock->numCount);
+      numBlock = numBlock->next;
+
+      if (numBlock != NULL)  /* zruseni zpracovaneho bloku */
+        destroyNumBlock(numBlock->prev, &list);
+    }
+  }
+  /* jedna z ciselnych soustav je jednou z mocninou te druhe */
+  /* FIXME Nefunguje */
+  else if ((power = isPowerOfNumberBase(inputNumberBase, outputNumberBase))
+           != FALSE) {
+    /** Nastaveni spravnych poctu nacitanych a vypisovanych cisel */
+    unsigned short inputNumbersCount = power;
+    unsigned short outputNumbersCount = 1;
+    if (inputNumberBase > outputNumberBase) {
+      inputNumbersCount = 1;
+      outputNumbersCount = power;
+    }
+
+    numBlock = list.first;
+    unsigned k;
+    while (numBlock != NULL) {
+      for (i = 0; i < (int) numBlock->numCount; i += inputNumbersCount) {
+        for (k = 0; k < inputNumbersCount; k++) {
+          if (numBlock->num[i] > inputNumberBase) {  /* cislo neni v soustave */
+            destroyList(&list);
+            return EINPUT;
+          }
+          if (numBlock->num[i] < 10)
+            buf[i] = (char) (numBlock->num[i] + '0');
+          else
+            buf[i] = (char) (numBlock->num[i] + 'A' - 10);
+        }
       }
       write(STDOUT, buf, numBlock->numCount);
       numBlock = numBlock->next;
