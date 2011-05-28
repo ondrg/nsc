@@ -28,7 +28,7 @@
 #define MIN_NUMBER_BASE 2   /**< minimalni ciselna soustava (min. je 2) */
 #define MAX_NUMBER_BASE 36  /**< maximalni ciselna soustava (max. je 36) */
 
-#define NUM_BLOCK_SIZE 120  /**< velikost bloku cisel (cislo delitelne 60) */
+#define NUM_BLOCK_SIZE 1200  /**< velikost bloku cisel (cislo delitelne 60) */
 
 #define TRUE 1
 #define FALSE 0
@@ -312,6 +312,7 @@ int convertNumberBases(void)
       }
       else if (buf[i] == ']') {  /* konec nacitaneho cisla */
         /* TODO Nacteni zadanych ciselnych soustav neni idealni! */
+        /* FIXME Lze nacist "zadne cislo": []2=10 */
 
         /* minimalne 3 znaky na definovani ciselne soustavy */
         if ((i + 3) >= readBytes) {
