@@ -68,14 +68,14 @@ strip:
 	strip $(APP)
 
 clean:
-	rm -rf $(APP) doc/ $(APP).tgz
+	rm -rf $(APP) doc/ $(APP).tgz $(TEST) $(TESTS)
 
 
 $(TEST): $(TEST).c
 	$(CC) $(CFLAGS) -o $(TEST) $(TEST).c
 
 generate:
-	mkdir $(TESTS) &> /dev/null
+	mkdir -p $(TESTS)
 	./$(TEST) 10 10 10 > $(TESTS)/10to10.txt
 	./$(TEST) 10 2 10 > $(TESTS)/10to2.txt
 	./$(TEST) 2 10 10 > $(TESTS)/2to10.txt
@@ -88,13 +88,13 @@ generate:
 	./$(TEST) 8 2 10 > $(TESTS)/8to2.txt
 
 generatehuge:
-	mkdir $(TESTS) &> /dev/null
+	mkdir -p $(TESTS)
 	./$(TEST) 10 2 1047546 > $(TESTS)/1M.txt  # 1 MB
 	./$(TEST) 10 2 10475460 > $(TESTS)/10M.txt  # 10 MB
 	./$(TEST) 10 2 20950920 > $(TESTS)/20M.txt  # 20 MB
 	./$(TEST) 10 2 52377300 > $(TESTS)/50M.txt  # 50 MB
-	./$(TEST) 10 2 104754600 > $(TESTS)/100M.txt  # 100 MB
-	./$(TEST) 10 2 209509200 > $(TESTS)/200M.txt  # 200 MB
-	./$(TEST) 10 2 523773000 > $(TESTS)/500M.txt  # 500 MB
-	./$(TEST) 10 2 1047546000 > $(TESTS)/1G.txt  # 1 GB
+#	./$(TEST) 10 2 104754600 > $(TESTS)/100M.txt  # 100 MB
+#	./$(TEST) 10 2 209509200 > $(TESTS)/200M.txt  # 200 MB
+#	./$(TEST) 10 2 523773000 > $(TESTS)/500M.txt  # 500 MB
+#	./$(TEST) 10 2 1047546000 > $(TESTS)/1G.txt  # 1 GB
 
