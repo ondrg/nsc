@@ -43,5 +43,42 @@ Výstupem je číslo v soustavě se základem z2 ve formátu [číslo] z2.
 Hodnotit se bude funkčnost, efektivnost (rychlost běhu i paměťové nároky),
 přehlednost kódu a dokumentace.
 
+== 6. Referenční implementace ==
+
+Pro ty, co si myslí, že úloha je snadná, přikládáme testovací soubory
+i s časem, který dosáhla referenční implementace vytvořená společností ESET.
+Zájemce, kteří realizují převod pomocí nejznámějšího způsobu, postupným
+dělením převáděného čísla základem soustavy do níž se číslo převádí, bychom
+chtěli upozornit, že tento algoritmus má složitost n^2. Což znamená, že již
+převod čísla s počtem číslic 100.000 (sto tisíc) bude pro ně výkonově velmi
+náročný. Referenční implementace dosáhla při převodu tohoto čísla čas 0,026 s.
+Což je 26 tisícin sekundy.
+
+Referenční implementace využívala jen jedno jádro procesoru. Vzhledem
+k povolenému API ani není možne využít paralelizace. Tato referenční
+implementace nebude figurovat ve výsledném žebříčku. Uvítáme i řešitele,
+jejichž řešení dokáže v rozumném čase (do hodiny) převést číslo s 100.000
+číslicemi. Zájemce o tablet však bude muset poslat řešení, které dokáže převést
+i číslo s jednou miliardou číslic.
+
+Parametry testovacího prostředí:
+
+CPU: Intel Core i5 2,67 GHz
+RAM: 4GB
+OS: Linux x86_64
+
+Tabulka s časy, kterých dosáhla referenční implementace s:
+
+file  time
+10.000 digits (4.29KB)  0,005s  Result (4.22KB)
+100.000 digits (42.1KB) 0,026s  Result (41.47KB)
+1.000.000 digits (420KB)  0,274s  Result (414KB)
+10.000.000 digits (4.1MB) 4,526s  Result (4.04MB)
+100.000.000 digits (41.0MB) 73,527s Result (40.44MB)
+1.000.000.000 digits (410MB)  1078,013s Result (405MB)
+
+PS: Referenční implementaci lze překonat i při použití známých algoritmů,
+nechali jsme vám rezervu;).
+
 Vaše postřehy /analýzy/ řešení zasílejte na následující adresu:
 [numbertransfer@eset.sk]

@@ -1,0 +1,4 @@
+TODO
+ * misto navratovych hodnot pouzivat errno http://linux.die.net/man/3/errno
+ * predelat datove typy promennych (nepouzivat napr. int)
+

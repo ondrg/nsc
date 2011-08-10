@@ -39,11 +39,22 @@ pote z desitkove do Z2).
 Zajimave:
 http://www.codeproject.com/KB/recipes/BaseConverter.aspx
 http://forums.xkcd.com/viewtopic.php?f=12&t=69664
+http://en.wikipedia.org/wiki/Binary_numeral_system
+  #Conversion_to_and_from_other_numeral_systems
+http://mathforum.org/library/drmath/view/55970.html
+http://mikrokontrolery-pic.cz/zaciname/cislicova-technika/ciselne-soustavy/
+ - algoritmus s postupnym odecitanim
+http://cs.wikipedia.org/wiki/Hornerovo_sch%C3%A9ma
 
 Mene zajimave:
 http://www.algoritmy.net/article/80/Prevod-cisla-mezi-soustavami
+http://www.digitconvert.com/
 
 Mozna zajimave:
 http://cs.wikipedia.org/wiki/Pozi%C4%8Dn%C3%AD_%C4%8D%C3%ADseln%C3%A1_soustava
 http://en.wikipedia.org/wiki/Binary-coded_decimal
 http://en.wikipedia.org/wiki/Huffman_coding
+
+*** Knihy ***
+
+Donald E. Knuth: The Art of Computer Programming, Vol.2

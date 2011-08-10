@@ -74,13 +74,13 @@ enum codes {
  * Chybova hlaseni. Jejich poradi odpovida poradi konstant ve vyctu codes.
  */
 const char *MSG[] = {
-  "OK.",
-  "ERROR! Cannot allocate memory.",
-  "ERROR! Read from standard input failed.",
-  "ERROR! Bad format of input data.",
-  "ERROR! Input radix is out of range.",
-  "ERROR! Output radix is out of range.",
-  "ERROR! Unknown error.",
+  "OK.\n",
+  "ERROR! Cannot allocate memory.\n",
+  "ERROR! Read from standard input failed.\n",
+  "ERROR! Bad format of input data.\n",
+  "ERROR! Input radix is out of range.\n",
+  "ERROR! Output radix is out of range.\n",
+  "ERROR! Unknown error.\n",
 };
 
 
@@ -94,12 +94,12 @@ void printError(int error)
   if (error < EOK || error >= EUNKNOWN)
     error = EUNKNOWN;
 
+  /* TODO Zkusit vymyslet efektivnejsi reseni. */
   unsigned int msgLength = 0;  /* Pocet znaku v chybove hlasce */
   while (MSG[error][msgLength] != '\0')
     msgLength++;
 
   write(STDERR, MSG[error], msgLength);
-  write(STDERR, "\n", 1);
 }
 
 
@@ -169,9 +169,9 @@ void destroyNumBlock(TNumBlock *numBlock, TNum *list)
 
   /** Odstraneni z ukazatele na seznam */
   if (numBlock == list->first)
-    list->first = NULL;
+    list->first = numBlock->next;
   if (numBlock == list->last)
-    list->last = NULL;
+    list->last = numBlock->prev;
 
   free(numBlock);
 }
@@ -208,6 +208,8 @@ void destroyList(TNum *list)
  */
 short isPowerOfNumberBase(unsigned short baseOne, unsigned short baseTwo)
 {
+  /* TODO Slo by mozna napsat lepe pomoci prevodni tabulky */
+
   /** baseOne musi byt mensi nebo stejna nez baseTwo */
   if (baseOne > baseTwo) {
     /* prohozeni promennych pomoci operace XOR */
@@ -392,8 +394,6 @@ int convertNumberBases(void)
     return EOUTPUTBASE;
   }
 
-  /* TODO Chybi osetreni vstupnich cisel dane soustavy ([123]2=10 je chyba) */
-
   short power = 0;  /**< mocnina soutavy */
 
   write(STDOUT, "[", 1);  /* zacatek cisla */
@@ -403,7 +403,7 @@ int convertNumberBases(void)
     numBlock = list.first;
     while (numBlock != NULL) {
       for (i = 0; i < (int) numBlock->numCount; i++) {
-        if (numBlock->num[i] > inputNumberBase) {  /* cislo neni v soustave */
+        if (numBlock->num[i] >= inputNumberBase) {  /* cislo neni v soustave */
           destroyList(&list);
           return EINPUT;
         }
