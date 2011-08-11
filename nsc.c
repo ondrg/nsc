@@ -267,6 +267,8 @@ short isLetter(char ch)
  */
 int convertNumberBases(void)
 {
+  /* TODO Rozdelit funkci na vice podfunkci (je prilis slozita) */
+
   TNum list;  /**< Obousmerny seznam */
   inicializeList(&list);
 
@@ -316,6 +318,7 @@ int convertNumberBases(void)
         /* TODO Nacteni zadanych ciselnych soustav neni idealni! */
         /* FIXME Lze nacist "zadne cislo": []2=10 */
 
+        /* TODO Nejspise chybne, proverit! */
         /* minimalne 3 znaky na definovani ciselne soustavy */
         if ((i + 3) >= readBytes) {
           destroyList(&list);
@@ -398,8 +401,13 @@ int convertNumberBases(void)
 
   write(STDOUT, "[", 1);  /* zacatek cisla */
 
+  /* TODO Chybi osetredni vstupnich cisel dane soustavy ([123]2=10 je chyba)
+     Osetreni bud provest globalne nebo u kazdeho druhu prevodu zvlast */
+
   /** Konverze do vystupni ciselne soustavy a vypis na standardni vystup */
-  if (inputNumberBase == outputNumberBase) {  /* ciselne soutavy jsou stejne */
+
+  /* ciselne soutavy jsou stejne */
+  if (inputNumberBase == outputNumberBase) {
     numBlock = list.first;
     while (numBlock != NULL) {
       for (i = 0; i < (int) numBlock->numCount; i++) {
@@ -445,6 +453,28 @@ int convertNumberBases(void)
           else
             buf[i] = (char) (numBlock->num[i] + 'A' - 10);
         }
+      }
+      write(STDOUT, buf, numBlock->numCount);
+      numBlock = numBlock->next;
+
+      if (numBlock != NULL)  /* zruseni zpracovaneho bloku */
+        destroyNumBlock(numBlock->prev, &list);
+    }
+  }
+  /* univerzalni prevod mezi ciselnymi soustavami */
+  /* FIXME Nefunguje */
+  else {
+    numBlock = list.first;
+    while (numBlock != NULL) {
+      for (i = 0; i < (int) numBlock->numCount; i++) {
+        if (numBlock->num[i] >= inputNumberBase) {  /* cislo neni v soustave */
+          destroyList(&list);
+          return EINPUT;
+        }
+        if (numBlock->num[i] < 10)
+          buf[i] = (char) (numBlock->num[i] + '0');
+        else
+          buf[i] = (char) (numBlock->num[i] + 'A' - 10);
       }
       write(STDOUT, buf, numBlock->numCount);
       numBlock = numBlock->next;
