@@ -17,7 +17,8 @@
 #include <stdlib.h>  /* malloc, free */
 #include <unistd.h>  /* read, write */
 
-#include <stdint.h>  /* uint8_t */
+#include <stdint.h>  /* uint*_t */
+#include <stdbool.h>  /* bool */
 
 #include <stdio.h>  /* TODO SMAZAT! Z duvodu ladeni */
 
@@ -30,34 +31,41 @@
 
 #define NUM_BLOCK_SIZE 1200  /**< velikost bloku cisel (cislo delitelne 60) */
 
-#define TRUE 1
-#define FALSE 0
-
 
 /**
  * Blok cisel.
  * Obousmerne vazany seznam.
  */
-typedef struct numBlock {
+typedef struct listBlock {
   uint8_t num[NUM_BLOCK_SIZE];  /**< blok cisel */
-  unsigned numCount;  /**< pocet ulozenych cisel */
-  struct numBlock *prev;
-  struct numBlock *next;
-} TNumBlock;
+  uint16_t numCount;  /**< pocet ulozenych cisel */
+  struct listBlock *prev;
+  struct listBlock *next;
+} TListBlock;
 
 
 /**
  * Ukazatele na zacatek a konec seznamu.
  */
 typedef struct {
-  TNumBlock *first;
-  TNumBlock *last;
+  TListBlock *first;
+  TListBlock *last;
+} TList;
+
+
+/**
+ * Struktura s kompletnim obsahem dat o cisle i soustavach.
+ */
+typedef struct {
+  uint8_t inputNumberBase;  /**< ve ktere soustave je cislo */
+  uint8_t outputNumberBase;  /**< do ktere soustavy se ma konvertovat */
+  TList list;  /**< seznam obsahujici vstupni cislo */
 } TNum;
 
 
 
 /**
- * Kody stavu (predevsim chybovych)
+ * Kody stavu (predevsim chybovych).
  */
 enum codes {
   EOK = 0,      /**< Vse v poradku */
@@ -95,7 +103,7 @@ void printError(int error)
     error = EUNKNOWN;
 
   /* TODO Zkusit vymyslet efektivnejsi reseni. */
-  unsigned int msgLength = 0;  /* Pocet znaku v chybove hlasce */
+  uint8_t msgLength = 0;  /* Pocet znaku v chybove hlasce */
   while (MSG[error][msgLength] != '\0')
     msgLength++;
 
@@ -108,7 +116,10 @@ void printError(int error)
  */
 void clearBuffer(void)
 {
-  /* TODO Asi nefunguje moc dobre. */
+  /* TODO Asi nefunguje moc dobre.
+     Otestovat, jestli je to k necemu */
+
+  /* TODO Vetsi buffer bude lepsi */
   char buf;
   while (read(STDIN, &buf, 1) == 1)
     ;
@@ -117,9 +128,9 @@ void clearBuffer(void)
 
 /**
  * Inicializuje ukazatele na seznam.
- * @param list Ukazatel na strukturu TNum.
+ * @param list Ukazatel na strukturu TList.
  */
-void inicializeList(TNum *list)
+void inicializeList(TList *list)
 {
   list->first = NULL;
   list->last = NULL;
@@ -127,64 +138,77 @@ void inicializeList(TNum *list)
 
 
 /**
- * Prida novy numBlock na konec seznamu.
- * @param list Ukazatel na strukturu TNum.
- * @return Ukazatel na prave pridany numBlock nebo NULL pri chybe.
+ * Inicializuje strukturu TNum
+ * @param num Ukazatel na strukturu TNum
  */
-TNumBlock *addNewNumBlock(TNum *list)
+void inicializeNum(TNum *num)
 {
-  TNumBlock *numBlock = malloc(sizeof(TNumBlock));
-  if (numBlock == NULL)  /* chyba pri alokaci */
-    return NULL;
-
-  for (int i = 0; i < NUM_BLOCK_SIZE; i++)  /* inicializace cisel */
-    numBlock->num[i] = 0;
-  numBlock->numCount = 0;
-
-  if (list->first == NULL) {  /* pridavame prvni blok */
-    list->first = numBlock;
-  }
-  else {  /* pridavame dalsi blok */
-    list->last->next = numBlock;
-  }
-  numBlock->prev = list->last;
-  numBlock->next = NULL;
-  list->last = numBlock;
-
-  return numBlock;
+  num->inputNumberBase = 0;
+  num->outputNumberBase = 0;
+  num->list.first = NULL;
+  num->list.last = NULL;
 }
 
 
 /**
- * Zrusi numBlock a opravi navaznosti seznamu
- * @param numBlock Ukazatel na numBlock ke zruseni.
- * @param list Ukazatel na strukturu TNum.
+ * Prida novy listBlock na konec seznamu.
+ * @param list Ukazatel na strukturu TList.
+ * @return Ukazatel na prave pridany listBlock nebo NULL pri chybe.
  */
-void destroyNumBlock(TNumBlock *numBlock, TNum *list)
+TListBlock *addNewListBlock(TList *list)
 {
-  if (numBlock->prev != NULL)  /* existuje predchozi prvek */
-    numBlock->prev->next = numBlock->next;
-  if (numBlock->next != NULL)  /* existuje nasledujici prvek */
-    numBlock->next->prev = numBlock->prev;
+  TListBlock *listBlock = malloc(sizeof(TListBlock));
+  if (listBlock == NULL)  /* chyba pri alokaci */
+    return NULL;
+
+  for (uint16_t i = 0; i < NUM_BLOCK_SIZE; i++)  /* inicializace cisel */
+    listBlock->num[i] = 0;
+  listBlock->numCount = 0;
+
+  if (list->first == NULL) {  /* pridavame prvni blok */
+    list->first = listBlock;
+  }
+  else {  /* pridavame dalsi blok */
+    list->last->next = listBlock;
+  }
+  listBlock->prev = list->last;
+  listBlock->next = NULL;
+  list->last = listBlock;
+
+  return listBlock;
+}
+
+
+/**
+ * Zrusi listBlock a opravi navaznosti seznamu
+ * @param listBlock Ukazatel na listBlock ke zruseni.
+ * @param list Ukazatel na strukturu TList.
+ */
+void destroyListBlock(TListBlock *listBlock, TList *list)
+{
+  if (listBlock->prev != NULL)  /* existuje predchozi prvek */
+    listBlock->prev->next = listBlock->next;
+  if (listBlock->next != NULL)  /* existuje nasledujici prvek */
+    listBlock->next->prev = listBlock->prev;
 
   /** Odstraneni z ukazatele na seznam */
-  if (numBlock == list->first)
-    list->first = numBlock->next;
-  if (numBlock == list->last)
-    list->last = numBlock->prev;
+  if (listBlock == list->first)
+    list->first = listBlock->next;
+  if (listBlock == list->last)
+    list->last = listBlock->prev;
 
-  free(numBlock);
+  free(listBlock);
 }
 
 
 /**
  * Zrusi seznam a uvolni veskerou pamet.
- * @param list Ukazatel na strukturu TNum.
+ * @param list Ukazatel na strukturu TList.
  */
-void destroyList(TNum *list)
+void destroyList(TList *list)
 {
   /*
-     POZOR! Zde je vyuzito ukazatele list->last na strukturu TNumBlock
+     POZOR! Zde je vyuzito ukazatele list->last na strukturu TListBlock
      jako pomocneho ukazatele z duvodu nepotrebnosti.
      Je mozne si vytvorit novy pomocny ukazatel, coz by bylo reseni
      prehlednejsi, ovsem ne uspornejsi.
@@ -204,9 +228,9 @@ void destroyList(TNum *list)
  * Vypocita jestli je jedna ciselna soustava mocninou druhe ciselne soustavy
  * @param baseOne Prvni ciselna soustava.
  * @param baseTwo Druha ciselna soustava.
- * @return x-ta mocnina, jinak FALSE.
+ * @return x-ta mocnina, jinak false.
  */
-short isPowerOfNumberBase(unsigned short baseOne, unsigned short baseTwo)
+uint8_t isPowerOfNumberBase(unsigned short baseOne, unsigned short baseTwo)
 {
   /* TODO Slo by mozna napsat lepe pomoci prevodni tabulky */
 
@@ -219,8 +243,8 @@ short isPowerOfNumberBase(unsigned short baseOne, unsigned short baseTwo)
   }
 
   /** zjisteni urovne mocniny */
-  unsigned int power = baseOne;
-  unsigned short xPower = 1;
+  uint8_t power = baseOne;
+  uint8_t xPower = 1;
   while (power <= MAX_NUMBER_BASE) {
     if (power == baseTwo)
       return xPower;
@@ -229,52 +253,47 @@ short isPowerOfNumberBase(unsigned short baseOne, unsigned short baseTwo)
     xPower++;
   }
 
-  return FALSE;
+  return false;
 }
 
 
 /**
  * Overi, jestli je dany znak cislo
  * @param ch Znak.
- * @return TRUE = je cislo, FALSE = neni cislo
+ * @return true = je cislo, false = neni cislo
  */
-short isNumber(char ch)
+bool isNumber(char ch)
 {
   if (ch >= '0' && ch <= '9')  /* cislo */
-    return TRUE;
+    return true;
 
-  return FALSE;
+  return false;
 }
 
 
 /**
  * Overi, jesti je dany znak pismeno
  * @param ch Znak.
- * @return TRUE = je cislo, FALSE = neni cislo
+ * @return true = je cislo, false = neni cislo
  */
-short isLetter(char ch)
+bool isLetter(char ch)
 {
   if (ch >= 'A' && ch <= 'Z')  /* pismeno */
-    return TRUE;
+    return true;
 
-  return FALSE;
+  return false;
 }
 
 
 /**
- * Prevede cisla z jedne ciselne soustavy do druhe
- * Pouziva standardni vstup a standardni vystup
+ * Nacte data ze vstupu do struktury TNum
+ * @param num Ukazatel na strukuturu typu TNum.
+ * @return Kod z vyctu codes.
  */
-int convertNumberBases(void)
+uint8_t readInput(TNum *num)
 {
-  /* TODO Rozdelit funkci na vice podfunkci (je prilis slozita) */
-
-  TNum list;  /**< Obousmerny seznam */
-  inicializeList(&list);
-
   char buf[NUM_BLOCK_SIZE];  /**< nacitaci buffer */
-  int readBytes;  /**< Pocet nactenych bytu */
-  TNumBlock *numBlock = NULL;  /**< ukazatel na aktualni blok */
+  short readBytes;  /**< Pocet nactenych bytu */
 
   /** Kontrola prvniho vstupniho znaku */
   readBytes = read(STDIN, buf, 1);
@@ -285,33 +304,29 @@ int convertNumberBases(void)
   if (buf[0] != '[')  /* vstpuni data nejsou ve spravnem formatu */
     return EINPUT;
 
-  unsigned short inputNumberBase = 0;  /**< vstupni ciselna soustava */
-  unsigned short outputNumberBase = 0;  /**< vystupni ciselna soustava */
+  /* TODO Overit, jestli je numbersCount potreba */
   uint64_t numbersCount = 0;  /**< pocet celkove nactenych cisel */
-  int i;  /**< iterator cyklu for */
+  TListBlock *listBlock = NULL;  /**< ukazatel na aktualni blok */
+  uint16_t i;  /**< iterator cyklu for */
 
   /** Nacitani vstpunich dat */
   while ((readBytes = read(STDIN, buf, NUM_BLOCK_SIZE)) != 0) {
-    if (readBytes == -1) {  /* chyba pri cteni ze vstupu */
-      destroyList(&list);
+    if (readBytes == -1) /* chyba pri cteni ze vstupu */
       return EREAD;
-    }
 
-    numBlock = addNewNumBlock(&list); 
-    if (numBlock == NULL) {  /* chyba pri alokaci pameti */
-      destroyList(&list);
+    listBlock = addNewListBlock(&num->list); 
+    if (listBlock == NULL)  /* chyba pri alokaci pameti */
       return EMEM;
-    }
 
     /** Zpracovani vsech nactenych znaku */
     for (i = 0; i < readBytes; i++) {
 
       if (isNumber(buf[i])) {  /* nacitame cislo */
-        numBlock->num[numBlock->numCount++] = (uint8_t) (buf[i] - '0');
+        listBlock->num[listBlock->numCount++] = (uint8_t) (buf[i] - '0');
         numbersCount++;
       }
       else if (isLetter(buf[i])) {  /* nacitame pismeno */
-        numBlock->num[numBlock->numCount++] = (uint8_t) (buf[i] - 'A' + 10);
+        listBlock->num[listBlock->numCount++] = (uint8_t) (buf[i] - 'A' + 10);
         numbersCount++;
       }
       else if (buf[i] == ']') {  /* konec nacitaneho cisla */
@@ -321,182 +336,261 @@ int convertNumberBases(void)
         /* TODO Nejspise chybne, proverit! */
         /* minimalne 3 znaky na definovani ciselne soustavy */
         if ((i + 3) >= readBytes) {
-          destroyList(&list);
           return EINPUT;
         }
         i++;  /* posunuti za znak ] */
 
         /** Zpracovani vstupni ciselne soustavy */
         if (isNumber(buf[i]))
-          inputNumberBase = (unsigned short) (buf[i] - '0');
+          num->inputNumberBase = (uint8_t) (buf[i] - '0');
         else {
-          destroyList(&list);
           return EINPUT;
         }
         i++;  /* posun na dalsi znak */
 
         if (buf[i] != '=') {  /* pokud je soustava dvojciferna */
           if (isNumber(buf[i])) {
-            inputNumberBase = (inputNumberBase * 10)
-                              + (unsigned short) (buf[i] - '0');
+            num->inputNumberBase = (num->inputNumberBase * 10)
+                                   + (uint8_t) (buf[i] - '0');
             i++;  /* posun na dalsi znak */
           }
           else {
-            destroyList(&list);
             return EINPUT;
           }
         }
 
         if (buf[i] != '=') {  /* pokud neexistuje oddelovac soustav */
-          destroyList(&list);
           return EINPUT;
         }
         if ((i + 1) >= readBytes) {  /* neni co cist */
-          destroyList(&list);
           return EINPUT;
         }
         i++;  /* posun na dalsi znak */
 
         /** Zpracovani vystupni ciselne soustavy */
         if (isNumber(buf[i]))
-          outputNumberBase = (unsigned short) (buf[i] - '0');
+          num->outputNumberBase = (uint8_t) (buf[i] - '0');
         else {
-          destroyList(&list);
           return EINPUT;
         }
         /* TODO Nacitani posledniho znaku je podezrele => proverit! */
         if ((i + 1) >= readBytes) {  /* neni co cist */
-          destroyList(&list);
           return EINPUT;
         }
         i++;  /* posun na dalsi znak */
 
         if (isNumber(buf[i]))
-          outputNumberBase = (outputNumberBase * 10)
-                             + (unsigned short) (buf[i] - '0');
+          num->outputNumberBase = (num->outputNumberBase * 10)
+                                  + (uint8_t) (buf[i] - '0');
 
-        clearBuffer();
+        clearBuffer();  /* TODO Musi tu byt? Overit! */
         break;
       }
       else {  /* neakceptovatelny znak */
-        destroyList(&list);
         return EINPUT;
       }
     }
   }
 
   /** Kontrola rozmezi vstupni a vystupni ciselne soustavy */
-  if (inputNumberBase < MIN_NUMBER_BASE ||
-      inputNumberBase > MAX_NUMBER_BASE) {
-    destroyList(&list);
+  if (num->inputNumberBase < MIN_NUMBER_BASE ||
+      num->inputNumberBase > MAX_NUMBER_BASE) {
     return EINPUTBASE;
   }
-  if (outputNumberBase < MIN_NUMBER_BASE ||
-      outputNumberBase > MAX_NUMBER_BASE) {
-    destroyList(&list);
+  if (num->outputNumberBase < MIN_NUMBER_BASE ||
+      num->outputNumberBase > MAX_NUMBER_BASE) {
     return EOUTPUTBASE;
   }
 
-  short power = 0;  /**< mocnina soutavy */
+  return EOK;
+}
+
+
+/**
+ * Vypise obsah struktury TNum na vystup
+ * @param num Ukazatel na strukuturu typu TNum.
+ * @return Kod z vyctu codes.
+ */
+uint8_t printNumbers(TNum *num)
+{
+  char buf[NUM_BLOCK_SIZE];  /**< nacitaci buffer */
+  uint16_t i;  /**< iterator cyklu for */
 
   write(STDOUT, "[", 1);  /* zacatek cisla */
+
+  TListBlock *listBlock = num->list.first;
+  while (listBlock != NULL) {
+    for (i = 0; i < listBlock->numCount; i++) {
+      /* TODO Je ta podminka tady nutna? */
+      /* cislo neni v soustave */
+      if (listBlock->num[i] >= num->inputNumberBase) {
+        return EINPUT;
+      }
+      if (listBlock->num[i] < 10)
+        buf[i] = (char) (listBlock->num[i] + '0');
+      else
+        buf[i] = (char) (listBlock->num[i] + 'A' - 10);
+    }
+    write(STDOUT, buf, listBlock->numCount);
+    listBlock = listBlock->next;
+
+    if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
+      destroyListBlock(listBlock->prev, &num->list);
+  }
+
+  destroyList(&num->list);
+
+  write(STDOUT, "]", 1);  /* konec cisla */
+  if (num->outputNumberBase < 10) {  /* jednociferna soustava */
+    buf[0] = (char) (num->outputNumberBase + '0');
+    write(STDOUT, buf, 1);
+  }
+  else {  /* dvouciferna soustava */
+    buf[0] = (char) ((num->outputNumberBase / 10) + '0');
+    buf[1] = (char) ((num->outputNumberBase
+                      - ((int) (buf[0] - '0') * 10)) + '0');
+    write(STDOUT, buf, 2);
+  }
+  write(STDOUT, "\n", 1);  /* odradkovani */
+
+  return EOK;
+}
+
+
+/**
+ * Prevod a vypsani na vystup pro cisla,
+ * z nichz je jedna n-tou mocninou druhe
+ * @param num Ukazatel na strukuturu typu TNum.
+ * @param power N-ta mocnina jedne ze soustav.
+ * @return Kod z vyctu codes.
+ */
+uint8_t powerConvertAndPrint(TNum *num, uint8_t power)
+{
+  /* FIXME Nefunguje */
+
+  char buf[NUM_BLOCK_SIZE];  /**< nacitaci buffer */
+  TListBlock *listBlock = NULL;  /**< ukazatel na aktualni blok */
+  uint16_t i;  /**< iterator cyklu for */
+  uint8_t k;  /**< iterator cyklu for */
+
+  /** Nastaveni spravnych poctu nacitanych a vypisovanych cisel */
+  uint8_t inputNumbersCount = power;
+  uint8_t outputNumbersCount = 1;
+  if (num->inputNumberBase > num->outputNumberBase) {
+    inputNumbersCount = 1;
+    outputNumbersCount = power;
+  }
+
+  listBlock = num->list.first;
+
+  while (listBlock != NULL) {
+    for (i = 0; i < (int) listBlock->numCount; i += inputNumbersCount) {
+      for (k = 0; k < inputNumbersCount; k++) {
+        if (listBlock->num[i] < 10)
+          buf[i] = (char) (listBlock->num[i] + '0');
+        else
+          buf[i] = (char) (listBlock->num[i] + 'A' - 10);
+      }
+    }
+    write(STDOUT, buf, listBlock->numCount);
+    listBlock = listBlock->next;
+
+    if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
+      destroyListBlock(listBlock->prev, &num->list);
+  }
+
+  return EOK;
+}
+
+
+/**
+ * Univerzalni prevod mezi cisel soustavami
+ * @param num Ukazatel na strukturu TNum.
+ * @return Kod z vyctu codes.
+ */
+uint8_t universalConvert(TNum *num)
+{
+  /* FIXME Nefunguje */
+
+  char buf[NUM_BLOCK_SIZE];  /**< nacitaci buffer */
+  TListBlock *listBlock = NULL;  /**< ukazatel na aktualni blok */
+  uint16_t i;  /**< iterator cyklu for */
+
+  listBlock = num->list.first;
+  while (listBlock != NULL) {
+    for (i = 0; i < listBlock->numCount; i++) {
+      if (listBlock->num[i] < 10)
+        buf[i] = (char) (listBlock->num[i] + '0');
+      else
+        buf[i] = (char) (listBlock->num[i] + 'A' - 10);
+    }
+    write(STDOUT, buf, listBlock->numCount);
+    listBlock = listBlock->next;
+
+    if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
+      destroyListBlock(listBlock->prev, &num->list);
+  }
+
+  return EOK;
+}
+
+
+/**
+ * Prevede cisla z jedne ciselne soustavy do druhe
+ * Pouziva standardni vstup a standardni vystup
+ */
+uint8_t convertNumberBases(void)
+{
+  uint8_t state;  /**< navratovy kod funkci */
+
+  TNum num;  /**< struktura pro zpracovani dat */
+  inicializeNum(&num);
+
+  /** Nacteni dat ze vstupu */
+  state = readInput(&num);
+  if (state != EOK) {  /* nacitani ze vstupu selhalo */    
+    destroyList(&num.list);
+    return state;
+  }
 
   /* TODO Chybi osetredni vstupnich cisel dane soustavy ([123]2=10 je chyba)
      Osetreni bud provest globalne nebo u kazdeho druhu prevodu zvlast */
 
   /** Konverze do vystupni ciselne soustavy a vypis na standardni vystup */
 
-  /* ciselne soutavy jsou stejne */
-  if (inputNumberBase == outputNumberBase) {
-    numBlock = list.first;
-    while (numBlock != NULL) {
-      for (i = 0; i < (int) numBlock->numCount; i++) {
-        if (numBlock->num[i] >= inputNumberBase) {  /* cislo neni v soustave */
-          destroyList(&list);
-          return EINPUT;
-        }
-        if (numBlock->num[i] < 10)
-          buf[i] = (char) (numBlock->num[i] + '0');
-        else
-          buf[i] = (char) (numBlock->num[i] + 'A' - 10);
-      }
-      write(STDOUT, buf, numBlock->numCount);
-      numBlock = numBlock->next;
+  uint8_t power = 0;  /**< n-ta mocnina soutavy */
 
-      if (numBlock != NULL)  /* zruseni zpracovaneho bloku */
-        destroyNumBlock(numBlock->prev, &list);
+  /* ciselne soutavy jsou stejne */
+  if (num.inputNumberBase == num.outputNumberBase) {
+    state = printNumbers(&num);
+    if (state != EOK) {  /* vypis na vystup selhal */
+      destroyList(&num.list);
+      return state;
     }
   }
-  /* jedna z ciselnych soustav je jednou z mocninou te druhe */
-  /* FIXME Nefunguje */
-  else if ((power = isPowerOfNumberBase(inputNumberBase, outputNumberBase))
-           != FALSE) {
-    /** Nastaveni spravnych poctu nacitanych a vypisovanych cisel */
-    unsigned short inputNumbersCount = power;
-    unsigned short outputNumbersCount = 1;
-    if (inputNumberBase > outputNumberBase) {
-      inputNumbersCount = 1;
-      outputNumbersCount = power;
-    }
-
-    numBlock = list.first;
-    unsigned k;
-    while (numBlock != NULL) {
-      for (i = 0; i < (int) numBlock->numCount; i += inputNumbersCount) {
-        for (k = 0; k < inputNumbersCount; k++) {
-          if (numBlock->num[i] > inputNumberBase) {  /* cislo neni v soustave */
-            destroyList(&list);
-            return EINPUT;
-          }
-          if (numBlock->num[i] < 10)
-            buf[i] = (char) (numBlock->num[i] + '0');
-          else
-            buf[i] = (char) (numBlock->num[i] + 'A' - 10);
-        }
-      }
-      write(STDOUT, buf, numBlock->numCount);
-      numBlock = numBlock->next;
-
-      if (numBlock != NULL)  /* zruseni zpracovaneho bloku */
-        destroyNumBlock(numBlock->prev, &list);
+  /* jedna z ciselnych soustav je n-tou mocninou te druhe */
+  else if ((power = isPowerOfNumberBase(num.inputNumberBase,
+                                        num.outputNumberBase)) != false) {
+    state = powerConvertAndPrint(&num, power);
+    if (state != EOK) {  /* prevod cisla selhal */
+      destroyList(&num.list);
+      return state;
     }
   }
   /* univerzalni prevod mezi ciselnymi soustavami */
-  /* FIXME Nefunguje */
   else {
-    numBlock = list.first;
-    while (numBlock != NULL) {
-      for (i = 0; i < (int) numBlock->numCount; i++) {
-        if (numBlock->num[i] >= inputNumberBase) {  /* cislo neni v soustave */
-          destroyList(&list);
-          return EINPUT;
-        }
-        if (numBlock->num[i] < 10)
-          buf[i] = (char) (numBlock->num[i] + '0');
-        else
-          buf[i] = (char) (numBlock->num[i] + 'A' - 10);
-      }
-      write(STDOUT, buf, numBlock->numCount);
-      numBlock = numBlock->next;
+    state = universalConvert(&num);
+    if (state != EOK) {  /* prevod cisla selhal */
+      destroyList(&num.list);
+      return state;
+    }
 
-      if (numBlock != NULL)  /* zruseni zpracovaneho bloku */
-        destroyNumBlock(numBlock->prev, &list);
+    state = printNumbers(&num);
+    if (state != EOK) {  /* vypis na vystup selhal */
+      destroyList(&num.list);
+      return state;
     }
   }
-
-  destroyList(&list);
-
-  write(STDOUT, "]", 1);  /* konec cisla */
-  if (outputNumberBase < 10) {  /* jednociferna soustava */
-    buf[0] = (char) (outputNumberBase + '0');
-    write(STDOUT, buf, 1);
-  }
-  else {  /* dvouciferna soustava */
-    buf[0] = (char) ((outputNumberBase / 10) + '0');
-    buf[1] = (char) ((outputNumberBase - ((int) (buf[0] - '0') * 10)) + '0');
-    write(STDOUT, buf, 2);
-  }
-  write(STDOUT, "\n", 1);  /* odradkovani */
 
   return EOK;
 }
@@ -506,13 +600,12 @@ int convertNumberBases(void)
 
 int main(void)
 {
-  int state = convertNumberBases();
+  uint8_t state = convertNumberBases();
   if (state != EOK) {  /* neco je spatne */
-    clearBuffer();
+    clearBuffer();  /* TODO Musi tu byt? Overit! */
     printError(state);
     return state;
   }
 
   return EOK;
 }
-
