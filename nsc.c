@@ -437,6 +437,8 @@ uint8_t readInput(TNum *num)
  */
 uint8_t printNumbers(TNum *num)
 {
+  /* FIXME Vypsane cislo nesmi zacinat 0! */
+
   char buf[NUM_BLOCK_SIZE];  /**< nacitaci buffer */
   uint16_t i;  /**< iterator cyklu for */
 
@@ -481,7 +483,6 @@ uint8_t printNumbers(TNum *num)
  */
 uint8_t powerConvert(TNum *num, uint8_t power)
 {
-  /* FIXME Nefunguje */
   /* TODO Zvazit, jestli sem nepresunout podminku na overeni n-te mocniny */
 
   TList list;  /**< vystupni seznam pro data */
@@ -489,27 +490,26 @@ uint8_t powerConvert(TNum *num, uint8_t power)
   TListBlock *outputListBlock = NULL;  /**< ukazatel na vystupni blok */
   uint16_t i;  /**< iterator cyklu for (pro vstupni seznam) */
   uint16_t j = 0;  /**< iterator cyklu for (pro vystupni seznam) */
+  int8_t k;  /**< iterator cyklu for */
+
+  /* mocniny 2 az 6 (co je '0' se nepouziva) */
+  const uint8_t numPower[][6] = {
+    {0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0},
+    {1, 2, 4, 8, 16, 32},  /* 2 */
+    {1, 3, 9, 27, 0, 0},   /* 3 */
+    {1, 4, 16, 0, 0, 0},   /* 4 */
+    {1, 5, 25, 0, 0, 0},   /* 5 */
+    {1, 6, 36, 0, 0, 0},   /* 6 */
+  };
 
   inicializeList(&list);
   listBlock = num->list.first;
+  j = NUM_BLOCK_SIZE;  /* nastaveni potreby alokace noveho bloku */
+  power--;  /* max. uroven mocniny je o 1 mensi */
 
+  /** vstupni soutava < vystupni soustava */
   if (num->inputNumberBase < num->outputNumberBase) {
-    int8_t k;  /**< iterator cyklu for */
-
-    j = NUM_BLOCK_SIZE;  /* nastaveni potreby alokace noveho bloku */
-    power--;  /* max. uroven mocniny je o 1 mensi */
-
-    /* mocniny 2 az 6 (co je '0' se nepouziva) */
-    const uint8_t numPower[][6] = {
-      {0, 0, 0, 0, 0, 0},
-      {0, 0, 0, 0, 0, 0},
-      {1, 2, 4, 8, 16, 32},  /* 2 */
-      {1, 3, 9, 27, 0, 0},   /* 3 */
-      {1, 4, 16, 0, 0, 0},   /* 4 */
-      {1, 5, 25, 0, 0, 0},   /* 5 */
-      {1, 6, 36, 0, 0, 0},   /* 6 */
-    };
-
     while (listBlock != NULL) {
       /* je treba alokovat novy blok? */
       if (j == NUM_BLOCK_SIZE) {
@@ -524,27 +524,47 @@ uint8_t powerConvert(TNum *num, uint8_t power)
       /* prevod */
       i = 0;
       while (i < listBlock->numCount) {
-        outputListBlock->num[j] = 0;
-        for (k = power; k >= 0; k--) {
+        for (k = power; k >= 1; k--) {
           outputListBlock->num[j] += listBlock->num[i]
                                      * numPower[num->inputNumberBase][k];
           i++;
         }
-        outputListBlock->numCount++;
-        j++;
+        outputListBlock->num[j++] += listBlock->num[i++];
       }
+      outputListBlock->numCount = j;  /* pocet nactenych cisel */
       listBlock = listBlock->next;
 
       if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
         destroyListBlock(listBlock->prev, &num->list);
     }
   }
+  /** vstupni soustava > vystupni soustava */
   else {
-    //outputNumbersCount = power;
+    int8_t subtract;  /**< promenna pro ulozeni vysledku po odecteni */
 
     while (listBlock != NULL) {
       for (i = 0; i < listBlock->numCount; i++) {
-        outputListBlock->num[i] = listBlock->num[i];
+        /* je treba alokovat novy blok? */
+        if (j == NUM_BLOCK_SIZE) {
+          outputListBlock = addNewListBlock(&list);
+          if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
+            destroyList(&list);
+            return EMEM;
+          }
+          j = 0;
+        }
+
+        /* prevod */
+        for (k = power; k >= 1; k--) {
+          subtract = listBlock->num[i];
+          while ((subtract -= numPower[num->outputNumberBase][k]) > 0) {
+            listBlock->num[i] = subtract;
+            outputListBlock->num[j]++;
+          }
+          j++;
+        }
+        outputListBlock->num[j++] = listBlock->num[i];
+        outputListBlock->numCount = j;  /* pocet nactenych cisel */
       }
       listBlock = listBlock->next;
 
