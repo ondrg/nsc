@@ -95,6 +95,18 @@ const char *MSG[] = {
 
 
 /**
+ * Pole pro prevod cisel na znaky
+ */
+const char num2char[] = {
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+  'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+  'U', 'V', 'W', 'X', 'Y', 'Z',
+};
+
+
+
+/**
  * Vypise chybove hlaseni na standardni chybovy vystup.
  * @param error Kod chyby z vyctu codes.
  */
@@ -433,10 +445,7 @@ uint8_t printNumbers(TNum *num)
   TListBlock *listBlock = num->list.first;
   while (listBlock != NULL) {
     for (i = 0; i < listBlock->numCount; i++) {
-      if (listBlock->num[i] < 10)
-        buf[i] = (char) (listBlock->num[i] + '0');
-      else
-        buf[i] = (char) (listBlock->num[i] + 'A' - 10);
+      buf[i] = num2char[listBlock->num[i]];
     }
     write(STDOUT, buf, listBlock->numCount);
     listBlock = listBlock->next;
@@ -449,7 +458,7 @@ uint8_t printNumbers(TNum *num)
 
   write(STDOUT, "]", 1);  /* konec cisla */
   if (num->outputNumberBase < 10) {  /* jednociferna soustava */
-    buf[0] = (char) (num->outputNumberBase + '0');
+    buf[0] = num2char[num->outputNumberBase];
     write(STDOUT, buf, 1);
   }
   else {  /* dvouciferna soustava */
@@ -473,36 +482,81 @@ uint8_t printNumbers(TNum *num)
 uint8_t powerConvert(TNum *num, uint8_t power)
 {
   /* FIXME Nefunguje */
+  /* TODO Zvazit, jestli sem nepresunout podminku na overeni n-te mocniny */
 
-  char buf[NUM_BLOCK_SIZE];  /**< nacitaci buffer */
+  TList list;  /**< vystupni seznam pro data */
   TListBlock *listBlock = NULL;  /**< ukazatel na aktualni blok */
-  uint16_t i;  /**< iterator cyklu for */
-  uint8_t k;  /**< iterator cyklu for */
+  TListBlock *outputListBlock = NULL;  /**< ukazatel na vystupni blok */
+  uint16_t i;  /**< iterator cyklu for (pro vstupni seznam) */
+  uint16_t j = 0;  /**< iterator cyklu for (pro vystupni seznam) */
 
-  /** Nastaveni spravnych poctu nacitanych a vypisovanych cisel */
-  uint8_t inputNumbersCount = power;
-  uint8_t outputNumbersCount = 1;
-  if (num->inputNumberBase > num->outputNumberBase) {
-    inputNumbersCount = 1;
-    outputNumbersCount = power;
-  }
-
+  inicializeList(&list);
   listBlock = num->list.first;
 
-  while (listBlock != NULL) {
-    for (i = 0; i < listBlock->numCount; i += inputNumbersCount) {
-      for (k = 0; k < inputNumbersCount; k++) {
-        if (listBlock->num[i] < 10)
-          buf[i] = (char) (listBlock->num[i] + '0');
-        else
-          buf[i] = (char) (listBlock->num[i] + 'A' - 10);
-      }
-    }
-    listBlock = listBlock->next;
+  if (num->inputNumberBase < num->outputNumberBase) {
+    int8_t k;  /**< iterator cyklu for */
 
-    if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
-      destroyListBlock(listBlock->prev, &num->list);
+    j = NUM_BLOCK_SIZE;  /* nastaveni potreby alokace noveho bloku */
+    power--;  /* max. uroven mocniny je o 1 mensi */
+
+    /* mocniny 2 az 6 (co je '0' se nepouziva) */
+    const uint8_t numPower[][6] = {
+      {0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0},
+      {1, 2, 4, 8, 16, 32},  /* 2 */
+      {1, 3, 9, 27, 0, 0},   /* 3 */
+      {1, 4, 16, 0, 0, 0},   /* 4 */
+      {1, 5, 25, 0, 0, 0},   /* 5 */
+      {1, 6, 36, 0, 0, 0},   /* 6 */
+    };
+
+    while (listBlock != NULL) {
+      /* je treba alokovat novy blok? */
+      if (j == NUM_BLOCK_SIZE) {
+        outputListBlock = addNewListBlock(&list);
+        if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
+          destroyList(&list);
+          return EMEM;
+        }
+        j = 0;
+      }
+
+      /* prevod */
+      i = 0;
+      while (i < listBlock->numCount) {
+        outputListBlock->num[j] = 0;
+        for (k = power; k >= 0; k--) {
+          outputListBlock->num[j] += listBlock->num[i]
+                                     * numPower[num->inputNumberBase][k];
+          i++;
+        }
+        outputListBlock->numCount++;
+        j++;
+      }
+      listBlock = listBlock->next;
+
+      if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
+        destroyListBlock(listBlock->prev, &num->list);
+    }
   }
+  else {
+    //outputNumbersCount = power;
+
+    while (listBlock != NULL) {
+      for (i = 0; i < listBlock->numCount; i++) {
+        outputListBlock->num[i] = listBlock->num[i];
+      }
+      listBlock = listBlock->next;
+
+      if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
+        destroyListBlock(listBlock->prev, &num->list);
+    }
+  }
+
+  /** Zruseni stareho a navazani vystupniho seznamu */
+  destroyList(&num->list);
+  num->list.first = list.first;
+  num->list.last = list.last;
 
   return EOK;
 }
@@ -517,17 +571,13 @@ uint8_t universalConvert(TNum *num)
 {
   /* FIXME Nefunguje */
 
-  char buf[NUM_BLOCK_SIZE];  /**< nacitaci buffer */
   TListBlock *listBlock = NULL;  /**< ukazatel na aktualni blok */
   uint16_t i;  /**< iterator cyklu for */
 
   listBlock = num->list.first;
   while (listBlock != NULL) {
     for (i = 0; i < listBlock->numCount; i++) {
-      if (listBlock->num[i] < 10)
-        buf[i] = (char) (listBlock->num[i] + '0');
-      else
-        buf[i] = (char) (listBlock->num[i] + 'A' - 10);
+      listBlock->num[i] = listBlock->num[i];
     }
     listBlock = listBlock->next;
 
