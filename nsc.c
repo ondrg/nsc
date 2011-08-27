@@ -26,10 +26,15 @@
 #define STDOUT 1  /**< standardni vystup */
 #define STDERR 2  /**< standardni chybovy vystup */
 
+/**< nahrada parametr funkce addNewListBlock smysluplnejsim nazvem */
+#define FIRST true
+#define LAST false
+
 #define MIN_NUMBER_BASE 2   /**< minimalni ciselna soustava (min. je 2) */
 #define MAX_NUMBER_BASE 36  /**< maximalni ciselna soustava (max. je 36) */
 
-#define NUM_BLOCK_SIZE 600  /**< velikost bloku cisel (cislo delitelne 60) */
+//#define NUM_BLOCK_SIZE 600  /**< velikost bloku cisel (cislo delitelne 60) */
+#define NUM_BLOCK_SIZE 60  /**< velikost bloku cisel (cislo delitelne 60) */
 
 
 /**
@@ -160,9 +165,10 @@ void inicializeNum(TNum *num)
 /**
  * Prida novy listBlock na konec seznamu.
  * @param list Ukazatel na strukturu TList.
+ * @param last Pridani noveho bloku na konec (= true) nebo na zacatek.
  * @return Ukazatel na prave pridany listBlock nebo NULL pri chybe.
  */
-TListBlock *addNewListBlock(TList *list)
+TListBlock *addNewListBlock(TList *list, bool last)
 {
   TListBlock *listBlock = malloc(sizeof(TListBlock));
   if (listBlock == NULL)  /* chyba pri alokaci */
@@ -172,13 +178,26 @@ TListBlock *addNewListBlock(TList *list)
     listBlock->num[i] = 0;
   listBlock->numCount = 0;
 
-  if (list->first == NULL)  /* pridavame prvni blok */
+  /** pridani noveho bloku na konec (fronta) */
+  if (last == true) {
+    if (list->first == NULL)  /* pridavame prvni blok */
+      list->first = listBlock;
+    else  /* pridavame dalsi blok */
+      list->last->next = listBlock;
+    listBlock->prev = list->last;
+    listBlock->next = NULL;
+    list->last = listBlock;
+  }
+  /** pridani noveho bloku na zacatek (zasobnik) */
+  else {
+    if (list->last == NULL)  /* pridavame prvni blok */
+      list->last = listBlock;
+    else  /* pridavame dalsi blok */
+      list->first->prev = listBlock;
+    listBlock->prev = NULL;
+    listBlock->next = list->first;
     list->first = listBlock;
-  else  /* pridavame dalsi blok */
-    list->last->next = listBlock;
-  listBlock->prev = list->last;
-  listBlock->next = NULL;
-  list->last = listBlock;
+  }
 
   return listBlock;
 }
@@ -319,7 +338,7 @@ uint8_t readInput(TNum *num)
     if (readBytes == -1) /* chyba pri cteni ze vstupu */
       return EREAD;
 
-    listBlock = addNewListBlock(&num->list); 
+    listBlock = addNewListBlock(&num->list, FIRST); 
     if (listBlock == NULL)  /* chyba pri alokaci pameti */
       return EMEM;
 
@@ -437,8 +456,6 @@ uint8_t readInput(TNum *num)
  */
 uint8_t printNumbers(TNum *num)
 {
-  /* FIXME Vypsane cislo nesmi zacinat 0! */
-
   char buf[NUM_BLOCK_SIZE];  /**< nacitaci buffer */
   uint16_t i;  /**< iterator cyklu for */
 
@@ -488,7 +505,7 @@ uint8_t powerConvert(TNum *num, uint8_t power)
   TList list;  /**< vystupni seznam pro data */
   TListBlock *listBlock = NULL;  /**< ukazatel na aktualni blok */
   TListBlock *outputListBlock = NULL;  /**< ukazatel na vystupni blok */
-  uint16_t i;  /**< iterator cyklu for (pro vstupni seznam) */
+  uint16_t i = 0;  /**< iterator cyklu for (pro vstupni seznam) */
   uint16_t j = 0;  /**< iterator cyklu for (pro vystupni seznam) */
   int8_t k;  /**< iterator cyklu for */
 
@@ -510,33 +527,63 @@ uint8_t powerConvert(TNum *num, uint8_t power)
 
   /** vstupni soutava < vystupni soustava */
   if (num->inputNumberBase < num->outputNumberBase) {
-    while (listBlock != NULL) {
-      /* je treba alokovat novy blok? */
-      if (j == NUM_BLOCK_SIZE) {
-        outputListBlock = addNewListBlock(&list);
-        if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
-          destroyList(&list);
-          return EMEM;
-        }
-        j = 0;
-      }
-
-      /* prevod */
-      i = 0;
-      while (i < listBlock->numCount) {
-        for (k = power; k >= 1; k--) {
-          outputListBlock->num[j] += listBlock->num[i]
-                                     * numPower[num->inputNumberBase][k];
-          i++;
-        }
-        outputListBlock->num[j++] += listBlock->num[i++];
-      }
-      outputListBlock->numCount = j;  /* pocet nactenych cisel */
-      listBlock = listBlock->next;
-
-      if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
-        destroyListBlock(listBlock->prev, &num->list);
+    /* alokace a inicializace noveho bloku */
+    outputListBlock = addNewListBlock(&list, FIRST);
+    if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
+      destroyList(&list);
+      return EMEM;
     }
+    j = 0;
+
+    /* prevod neuplne prvni casti (pokud je treba) */
+    k = num->list.last->numCount % (power + 1);
+    if (k != 0) {
+      /* prevod */
+      while (k > 1) {
+        k--;
+        outputListBlock->num[j] += listBlock->num[i++]
+                                   * numPower[num->inputNumberBase][k];
+      }
+      outputListBlock->num[j++] += listBlock->num[i++];
+    }
+
+    /* prevod po castech */
+    if (i != listBlock->numCount) {  /* mame co prevadet */
+      while (listBlock != NULL) {
+        /* prevod */
+        for (k = power; k >= 0; k--) {
+          outputListBlock->num[j] += listBlock->num[i]
+                                    * numPower[num->inputNumberBase][k];
+          i++;
+
+          /* posun na dalsi vstupni blok */
+          if (i == listBlock->numCount) {
+            listBlock = listBlock->next;
+            i = 0;
+
+            if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
+              destroyListBlock(listBlock->prev, &num->list);
+            else
+              break;
+          }
+        }
+        j++;
+        //outputListBlock->num[j++] += listBlock->num[i++];
+
+        /* je treba alokovat novy blok? */
+        if (j == NUM_BLOCK_SIZE) {
+          outputListBlock->numCount = j;  /* pocet nactenych cisel */
+          outputListBlock = addNewListBlock(&list, FIRST);
+          if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
+            destroyList(&list);
+            return EMEM;
+          }
+          j = 0;
+        }
+      }
+    }
+
+    outputListBlock->numCount = j;  /* pocet nactenych cisel */
   }
   /** vstupni soustava > vystupni soustava */
   else {
@@ -546,7 +593,7 @@ uint8_t powerConvert(TNum *num, uint8_t power)
       for (i = 0; i < listBlock->numCount; i++) {
         /* je treba alokovat novy blok? */
         if (j == NUM_BLOCK_SIZE) {
-          outputListBlock = addNewListBlock(&list);
+          outputListBlock = addNewListBlock(&list, FIRST);
           if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
             destroyList(&list);
             return EMEM;
@@ -557,7 +604,7 @@ uint8_t powerConvert(TNum *num, uint8_t power)
         /* prevod */
         for (k = power; k >= 1; k--) {
           subtract = listBlock->num[i];
-          while ((subtract -= numPower[num->outputNumberBase][k]) > 0) {
+          while ((subtract -= numPower[num->outputNumberBase][k]) >= 0) {
             listBlock->num[i] = subtract;
             outputListBlock->num[j]++;
           }
@@ -591,19 +638,56 @@ uint8_t universalConvert(TNum *num)
 {
   /* FIXME Nefunguje */
 
+  TList list;  /**< vystupni seznam pro data */
   TListBlock *listBlock = NULL;  /**< ukazatel na aktualni blok */
-  uint16_t i;  /**< iterator cyklu for */
+  TListBlock *outputListBlock = NULL;  /**< ukazatel na vystupni blok */
+  uint16_t i = 0;  /**< iterator cyklu for */
+  uint16_t j;  /**< iterator cyklu for (pro vystupni seznam) */
+
+  /* alokace noveho bloku */
+  outputListBlock = addNewListBlock(&list, FIRST);
+  if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
+    destroyList(&list);
+    return EMEM;
+  }
+  outputListBlock->num[0] = listBlock->num[i++];
+  outputListBlock->numCount++;
 
   listBlock = num->list.first;
+
   while (listBlock != NULL) {
-    for (i = 0; i < listBlock->numCount; i++) {
-      listBlock->num[i] = listBlock->num[i];
+    while (i < listBlock->numCount) {
+      /* (all) list * num->outputNumberBase */
+
+      /* (all) list + listBlock->num[i] */
+      outputListBlock = list.first;
+      outputListBlock->num[0] += listBlock->num[i];
+      if (outputListBlock->num[0] >= num->outputNumberBase) {
+        listBlock->num[i] = outputListBlock->num[0] / num->outputNumberBase;
+        outputListBlock->num[0] = outputListBlock->num[0] % num->outputNumberBase;
+        j = 1;
+        while (listBlock != NULL) {
+          while (j < outputListBlock->numCount) {
+            j++;
+          }
+          j = 0;  /* vynulovani iteratoru */
+          outputListBlock = outputListBlock->next;
+        }
+      }
+
+      i++;
     }
+    i = 0;  /* vynulovani iteratoru */
     listBlock = listBlock->next;
 
     if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
       destroyListBlock(listBlock->prev, &num->list);
   }
+
+  /** Zruseni stareho a navazani vystupniho seznamu */
+  destroyList(&num->list);
+  num->list.first = list.first;
+  num->list.last = list.last;
 
   return EOK;
 }
