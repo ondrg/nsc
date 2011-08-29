@@ -638,8 +638,6 @@ uint8_t powerConvert(TNum *num, uint8_t power)
  */
 uint8_t universalConvert(TNum *num)
 {
-  /* FIXME Nefunguje */
-
   TList list;  /**< vystupni seznam pro data */
   TListBlock *listBlock = NULL;  /**< ukazatel na aktualni blok */
   TListBlock *outputListBlock = NULL;  /**< ukazatel na vystupni blok */
@@ -669,8 +667,11 @@ uint8_t universalConvert(TNum *num)
       outputListBlock->num[NUM_BLOCK_SIZE - 1] += listBlock->num[i];
       j = NUM_BLOCK_SIZE - 2;
       k = 1;
-      while (outputListBlock != NULL) {
-        while (k < outputListBlock->numCount) {
+      while (outputListBlock != NULL) {  /* cely seznam */
+/* FIXME Pri prevodech mezi velkymi soustavami muze dojit k preteceni!
+         Typ uint8_t na nasobeni 35 * 36 nestaci! Ani 16 * 17! */
+        /* vynasobeni cisla */
+        while (k < outputListBlock->numCount) {  /* vsechny cisla */
           outputListBlock->num[j--] *= num->inputNumberBase;
           k++;
         }
@@ -680,18 +681,19 @@ uint8_t universalConvert(TNum *num)
         j = NUM_BLOCK_SIZE - 1;
         k = 0;
       }
-//printf("num: %u\n", list.first->num[NUM_BLOCK_SIZE - 1]);
+
       /* prepocet do spravne soustavy */
       outputListBlock = list.last;
-      while (outputListBlock != NULL) {
+      while (outputListBlock != NULL) {  /* cely seznam */
         k = 0;
-        while (k < outputListBlock->numCount) {
-//printf("1> j: %u num[j]: %u borrow: %u\n", j, outputListBlock->num[j], borrow);
+        while (k < outputListBlock->numCount) {  /* vsechny cisla */
+          /* navraceni vypujcky */
           if (borrow != 0) {
             outputListBlock->num[j] += borrow;
             borrow = 0;
           }
-//printf("2> j: %u num[j]: %u borrow: %u\n", j, outputListBlock->num[j], borrow);
+
+          /* vypocet vypujcky */
           if (outputListBlock->num[j] >= num->outputNumberBase) {
             do
               borrow++;
@@ -700,28 +702,34 @@ uint8_t universalConvert(TNum *num)
           }
 
           j--;
-
           k++;
+
+          /* je treba pridat dalsi prvek? */
           if (k == outputListBlock->numCount && borrow != 0) {
+            /* jsme na konci bloku? */
             if (outputListBlock->numCount == NUM_BLOCK_SIZE) {
+              /* jsme na konci seznamu? */
               if (outputListBlock->prev == NULL) {
+                /* ano, pridame dalsi blok */
                 outputListBlock = addNewListBlock(&list, LAST);
                 if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
                   destroyList(&list);
                   return EMEM;
                 }
 
+                /* zapocitame vypujcku */
                 outputListBlock->num[NUM_BLOCK_SIZE - 1] = borrow;
                 borrow = 0;
                 outputListBlock->numCount++;
 
+                /* navrat na zpracovavany blok seznamu */
                 outputListBlock = outputListBlock->next;
               }
 
               break;
             }
             else
-              outputListBlock->numCount++;
+              outputListBlock->numCount++;  /* pridani ciselneho mista */
           }
         }
 
