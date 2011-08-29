@@ -418,8 +418,8 @@ uint8_t readInput(TNum *num)
         i++;  /* posun na dalsi znak */
 
          /* pokud existuje posledni znak */
-        if ((readBytes != 0 && (i + 1) < readBytes) ||
-            (readBytes == 0 && (i + 1) < lastReadBytes)) {
+        if ((readBytes != 0 && (i + 1) <= readBytes) ||
+            (readBytes == 0 && (i + 1) <= lastReadBytes)) {
           if (isNumber(buf[i])) {
             num->outputNumberBase = (num->outputNumberBase * 10)
                                     + (uint8_t) (buf[i] - '0');
@@ -587,6 +587,8 @@ uint8_t powerConvert(TNum *num, uint8_t power)
   }
   /** vstupni soustava > vystupni soustava */
   else {
+    /* FIXME Nuly na zacatku cisla */
+
     int8_t subtract;  /**< promenna pro ulozeni vysledku po odecteni */
 
     while (listBlock != NULL) {
@@ -643,36 +645,90 @@ uint8_t universalConvert(TNum *num)
   TListBlock *outputListBlock = NULL;  /**< ukazatel na vystupni blok */
   uint16_t i = 0;  /**< iterator cyklu for */
   uint16_t j;  /**< iterator cyklu for (pro vystupni seznam) */
+  uint16_t k;  /**< iterator cyklu pro prochazeni bloku */
+  uint16_t borrow = 0;  /**< hodnota na preneseni do dalsiho ciselneho radu */
 
-  /* alokace noveho bloku */
-  outputListBlock = addNewListBlock(&list, FIRST);
+  /** Inicializace */
+  inicializeList(&list);
+  listBlock = num->list.first;
+
+  outputListBlock = addNewListBlock(&list, LAST);
   if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
     destroyList(&list);
     return EMEM;
   }
-  outputListBlock->num[0] = listBlock->num[i++];
-  outputListBlock->numCount++;
+  outputListBlock->numCount++;  /* kvuli nacteni prvniho cisla */
 
-  listBlock = num->list.first;
-
+  /** Prevod */
   while (listBlock != NULL) {
     while (i < listBlock->numCount) {
       /* (all) list * num->outputNumberBase */
-
+      outputListBlock = list.last;
+      outputListBlock->num[NUM_BLOCK_SIZE - 1] *= num->inputNumberBase;
       /* (all) list + listBlock->num[i] */
-      outputListBlock = list.first;
-      outputListBlock->num[0] += listBlock->num[i];
-      if (outputListBlock->num[0] >= num->outputNumberBase) {
-        listBlock->num[i] = outputListBlock->num[0] / num->outputNumberBase;
-        outputListBlock->num[0] = outputListBlock->num[0] % num->outputNumberBase;
-        j = 1;
-        while (listBlock != NULL) {
-          while (j < outputListBlock->numCount) {
-            j++;
-          }
-          j = 0;  /* vynulovani iteratoru */
-          outputListBlock = outputListBlock->next;
+      outputListBlock->num[NUM_BLOCK_SIZE - 1] += listBlock->num[i];
+      j = NUM_BLOCK_SIZE - 2;
+      k = 1;
+      while (outputListBlock != NULL) {
+        while (k < outputListBlock->numCount) {
+          outputListBlock->num[j--] *= num->inputNumberBase;
+          k++;
         }
+
+        /* posun na dalsi blok a inicializace prochazeni seznamu */
+        outputListBlock = outputListBlock->prev;
+        j = NUM_BLOCK_SIZE - 1;
+        k = 0;
+      }
+//printf("num: %u\n", list.first->num[NUM_BLOCK_SIZE - 1]);
+      /* prepocet do spravne soustavy */
+      outputListBlock = list.last;
+      while (outputListBlock != NULL) {
+        k = 0;
+        while (k < outputListBlock->numCount) {
+//printf("1> j: %u num[j]: %u borrow: %u\n", j, outputListBlock->num[j], borrow);
+          if (borrow != 0) {
+            outputListBlock->num[j] += borrow;
+            borrow = 0;
+          }
+//printf("2> j: %u num[j]: %u borrow: %u\n", j, outputListBlock->num[j], borrow);
+          if (outputListBlock->num[j] >= num->outputNumberBase) {
+            do
+              borrow++;
+            while ((outputListBlock->num[j] -= num->outputNumberBase)
+                   >= num->outputNumberBase);
+          }
+
+          j--;
+
+          k++;
+          if (k == outputListBlock->numCount && borrow != 0) {
+            if (outputListBlock->numCount == NUM_BLOCK_SIZE) {
+              if (outputListBlock->prev == NULL) {
+                outputListBlock = addNewListBlock(&list, LAST);
+                if (outputListBlock == NULL) {  /* chyba pri alokaci pameti */
+                  destroyList(&list);
+                  return EMEM;
+                }
+
+                outputListBlock->num[NUM_BLOCK_SIZE - 1] = borrow;
+                borrow = 0;
+                outputListBlock->numCount++;
+
+                outputListBlock = outputListBlock->next;
+              }
+
+              break;
+            }
+            else
+              outputListBlock->numCount++;
+          }
+        }
+
+        /* posun na dalsi blok a inicializace prochazeni seznamu */
+        outputListBlock = outputListBlock->prev;
+        j = NUM_BLOCK_SIZE - 1;
+        k = 0;
       }
 
       i++;
@@ -682,6 +738,15 @@ uint8_t universalConvert(TNum *num)
 
     if (listBlock != NULL)  /* zruseni zpracovaneho bloku */
       destroyListBlock(listBlock->prev, &num->list);
+  }
+
+  /** Posun neuplneho seznamu */
+  outputListBlock = list.first;
+  if (outputListBlock->numCount != NUM_BLOCK_SIZE) {  /* seznam je neuplny */
+    j = NUM_BLOCK_SIZE - outputListBlock->numCount;
+    i = 0;
+    while (i < outputListBlock->numCount)
+      outputListBlock->num[i++] = outputListBlock->num[j++];
   }
 
   /** Zruseni stareho a navazani vystupniho seznamu */
