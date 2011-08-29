@@ -37,6 +37,7 @@ pote z desitkove do Z2).
 *** Odkazy ***
 
 Zajimave:
+http://www.wikihow.com/Convert-from-Binary-to-Decimal
 http://www.codeproject.com/KB/recipes/BaseConverter.aspx
 http://forums.xkcd.com/viewtopic.php?f=12&t=69664
 http://en.wikipedia.org/wiki/Binary_numeral_system

@@ -10,7 +10,7 @@
 #		- debugovani: 		make debug
 #		- valgrind:				make valgrind
 #
-#   - dokumentace:		make doc
+#   - dokumentace:		make doxygen
 #   - zabaleni:       make pack
 #
 #   - strip:          make strip
@@ -57,7 +57,7 @@ valgrind:
 	valgrind ./$(APP)
 
 
-doc:
+doxygen:
 	doxygen Doxyfile
 
 pack:
