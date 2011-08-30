@@ -26,7 +26,8 @@
 CC=gcc
 
 # parametry prekladace
-CFLAGS=-std=c99 -Wall -Wextra -pedantic -g
+#CFLAGS=-std=c99 -Wall -Wextra -pedantic -g
+CFLAGS=-std=c99 -Wall -Wextra -pedantic -O3
 
 # nazvy aplikaci
 APP=nsc

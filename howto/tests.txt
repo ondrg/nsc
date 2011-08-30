@@ -1,0 +1,95 @@
+Official tests
+==============
+
+=== Druha verze (-O3) ===
+
+-- 10 000 (ntb) --
+
+real    0m0.532s
+user    0m0.524s
+sys     0m0.004s
+
+-- 100 000 (ntb) ---
+
+real    0m52.905s
+user    0m52.719s
+sys     0m0.004s
+
+-- 10 000 (virtualmaster)
+
+real    0m0.541s
+user    0m0.536s
+sys     0m0.004s
+
+-- 100 000 (virtualmaster)
+
+real    1m8.163s
+user    1m6.904s
+sys     0m0.004s
+
+-- 1 000 000 (virtualmaster)
+
+real    98m8.607s
+user    96m40.230s
+sys     0m0.004s
+
+
+=== Druha verze ===
+
+-- 10 000 (ntb) --
+
+real    0m1.057s
+user    0m1.040s
+sys     0m0.004s
+
+-- 100 000 (ntb) ---
+
+real    1m46.511s
+user    1m44.759s
+sys     0m0.156s
+
+-- 10 000 (virtualmaster)
+
+real    0m1.025s
+user    0m1.016s
+sys     0m0.004s
+
+-- 100 000 (virtualmaster)
+
+real    1m19.955s
+user    1m18.769s
+sys     0m0.000s
+
+
+=== Prvni verze ===
+
+-- 10 000 (ntb) --
+
+real    0m2.512s
+user    0m2.508s
+sys     0m0.004s
+
+-- 100 000 (ntb) ---
+
+real    4m15.690s
+user    4m10.492s
+sys     0m0.132s
+
+
+-- 10 000 (virtualmaster)
+
+real    0m1.185s
+user    0m1.176s
+sys     0m0.000s
+
+-- 100 000 (virtualmaster)
+
+real    2m4.694s
+user    2m2.884s
+sys     0m0.004s
+
+-- 1 000 000 (virtualmaster)
+
+real    208m36.605s
+user    205m19.430s
+sys     0m0.036s
