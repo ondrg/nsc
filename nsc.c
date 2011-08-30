@@ -268,7 +268,7 @@ uint8_t isPowerOfNumberBase(uint8_t baseOne, uint8_t baseTwo)
   }
 
   /** zjisteni urovne mocniny */
-  uint8_t power = baseOne;  /**< uroven mocniny soustavy baseOne */
+  uint16_t power = baseOne;  /**< uroven mocniny soustavy baseOne */
   uint8_t nPower = 1;  /**< n-ta mocnina */
   /* dokud uroven mocniny nepresahne maximalni ciselnou soustavu */
   while (power <= MAX_NUMBER_BASE) {
@@ -402,8 +402,8 @@ uint8_t readInput(TNum *num)
         i++;  /* posun na dalsi znak */
 
         /* pokud neni co cist */
-        if ((readBytes != 0 && (i + 1) >= readBytes) ||
-            (readBytes == 0 && (i + 1) >= lastReadBytes)) {
+        if ((readBytes != 0 && i >= readBytes) ||
+            (readBytes == 0 && i >= lastReadBytes)) {
           return EINPUT;
         }
 
@@ -417,8 +417,8 @@ uint8_t readInput(TNum *num)
         i++;  /* posun na dalsi znak */
 
          /* pokud existuje posledni znak */
-        if ((readBytes != 0 && (i + 1) <= readBytes) ||
-            (readBytes == 0 && (i + 1) <= lastReadBytes)) {
+        if ((readBytes != 0 && i < readBytes) ||
+            (readBytes == 0 && i < lastReadBytes)) {
           if (isNumber(buf[i])) {
             num->outputNumberBase = (num->outputNumberBase * 10)
                                     + (uint8_t) (buf[i] - '0');
@@ -522,16 +522,16 @@ uint8_t printNumbers(TNum *num)
 
   destroyList(&num->list);
 
-  write(STDOUT, "]", 1);  /* konec cisla */
+  buf[0] = ']';  /* konec cisla */
   if (num->outputNumberBase < 10) {  /* jednociferna soustava */
-    buf[0] = num2char[num->outputNumberBase];
-    write(STDOUT, buf, 1);
+    buf[1] = num2char[num->outputNumberBase];
+    write(STDOUT, buf, 2);
   }
   else {  /* dvouciferna soustava */
-    buf[0] = (char) ((num->outputNumberBase / 10) + '0');
-    buf[1] = (char) ((num->outputNumberBase
-                      - ((int) (buf[0] - '0') * 10)) + '0');
-    write(STDOUT, buf, 2);
+    buf[1] = (char) ((num->outputNumberBase / 10) + '0');
+    buf[2] = (char) ((num->outputNumberBase
+                      - ((int) (buf[1] - '0') * 10)) + '0');
+    write(STDOUT, buf, 3);
   }
   write(STDOUT, "\n", 1);  /* odradkovani */
 
