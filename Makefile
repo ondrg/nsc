@@ -37,7 +37,7 @@ TEST=test
 TESTS=tests
 
 # soubory pro vytvoreni archivu
-PACK=$(APP).c Makefile *.txt Doxyfile
+PACK=$(APP).c Makefile *.txt Doxyfile documentation.pdf
 
 
 all: $(APP)
