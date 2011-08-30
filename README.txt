@@ -14,10 +14,12 @@ Formát vstupu: [XXX]Z1=Z2
 XXX = číslo ve vstupní soustavě
 Z1 = vstupní soustava
 Z2 = výstupní soustava (do které má být číslo převedeno)
+Např.: [1011]2=10
 
 Formát výstupu: [XXX]Z2
 XXX = číslo ve výstupní soustavě
 Z2 = výstupní soustava
+Např.: [11]10
 
 === Reprezentace čísel ===
 
