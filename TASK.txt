@@ -22,8 +22,8 @@ Příklad vstupního souboru:
 Takové číslo uvedené mezi [] reprezentuje hodnotu ve čtyřkové soustavě
 (soustavě se základem 4) a má se převést do soustavy se základem 32.
 
-Program si nemůže vytvářet žádný dočasný soubor a nemůže se v souboru pohybovat
-jinak než sekvenčním načtením tohoto souboru pomocí funkce read.
+Program si nemůže vytvářet žádný dočasný soubor a nemůže se v souboru
+pohybovat jinak než sekvenčním načtením tohoto souboru pomocí funkce read.
 
 Program musí být vytvořen v jazyce ANSI C (ne C++). Ze systémových volání nebo
 knihovních funkcí může používat pouze funkce read, write, malloc, free. Žádné
@@ -58,8 +58,8 @@ Referenční implementace využívala jen jedno jádro procesoru. Vzhledem
 k povolenému API ani není možne využít paralelizace. Tato referenční
 implementace nebude figurovat ve výsledném žebříčku. Uvítáme i řešitele,
 jejichž řešení dokáže v rozumném čase (do hodiny) převést číslo s 100.000
-číslicemi. Zájemce o tablet však bude muset poslat řešení, které dokáže převést
-i číslo s jednou miliardou číslic.
+číslicemi. Zájemce o tablet však bude muset poslat řešení, které dokáže
+převést i číslo s jednou miliardou číslic.
 
 Parametry testovacího prostředí:
 
@@ -69,16 +69,32 @@ OS: Linux x86_64
 
 Tabulka s časy, kterých dosáhla referenční implementace s:
 
-file  time
-10.000 digits (4.29KB)  0,005s  Result (4.22KB)
-100.000 digits (42.1KB) 0,026s  Result (41.47KB)
-1.000.000 digits (420KB)  0,274s  Result (414KB)
-10.000.000 digits (4.1MB) 4,526s  Result (4.04MB)
-100.000.000 digits (41.0MB) 73,527s Result (40.44MB)
-1.000.000.000 digits (410MB)  1078,013s Result (405MB)
+file                    time
+10.000 digits        (4.29KB)     0,005s  Result (4.22KB)
+100.000 digits       (42.1KB)     0,026s  Result (41.47KB)
+1.000.000 digits      (420KB)     0,274s  Result (414KB)
+10.000.000 digits     (4.1MB)     4,526s  Result (4.04MB)
+100.000.000 digits   (41.0MB)    73,527s  Result (40.44MB)
+1.000.000.000 digits  (410MB)  1078,013s  Result (405MB)
 
 PS: Referenční implementaci lze překonat i při použití známých algoritmů,
 nechali jsme vám rezervu;).
 
+Nápověda:
+google: modern computer Arithmetic
+Kapitola o převodu mezi soustavami není ta nejpodstatnější v případě,
+že chcete být nejrychlejší.
+
 Vaše postřehy /analýzy/ řešení zasílejte na následující adresu:
 [numbertransfer@eset.sk]
+
+== 7. Průběžné výsledky ==
+
+Pro určení pořadí v tabulce se nepoužívají zveřejněné soubory ale jiné.
+Provádí se ze soustavy, jejímž základem je prvočíslo a převod je také do
+soustavy, jejímž základem je prvočíslo. Z toho důvodu uvádíme i rychlost
+referenční implementace. Referenční implementace ale nezasahuje do výsledného
+pořadí. Do tabulky nebyly zařazeny řešení, které nedodržují specifikaci
+(používají i jiné systémové volání/ knihovní funkce než povolené read, write,
+malloc a free, využívají knihovny třetích stran, připadne, nerespektují
+formát vstupu a výstupu.
