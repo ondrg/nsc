@@ -402,8 +402,8 @@ uint8_t readInput(TNum *num)
         i++;  /* posun na dalsi znak */
 
         /* pokud neni co cist */
-        if ((readBytes != 0 && (i + 1) >= readBytes) ||
-            (readBytes == 0 && (i + 1) >= lastReadBytes)) {
+        if ((readBytes != 0 && i >= readBytes) ||
+            (readBytes == 0 && i >= lastReadBytes)) {
           return EINPUT;
         }
 
@@ -417,8 +417,8 @@ uint8_t readInput(TNum *num)
         i++;  /* posun na dalsi znak */
 
          /* pokud existuje posledni znak */
-        if ((readBytes != 0 && (i + 1) <= readBytes) ||
-            (readBytes == 0 && (i + 1) <= lastReadBytes)) {
+        if ((readBytes != 0 && i < readBytes) ||
+            (readBytes == 0 && i < lastReadBytes)) {
           if (isNumber(buf[i])) {
             num->outputNumberBase = (num->outputNumberBase * 10)
                                     + (uint8_t) (buf[i] - '0');
