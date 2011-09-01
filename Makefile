@@ -8,7 +8,6 @@
 #   - spusteni:				make run
 #   - editace:       	make edit
 #		- debugovani: 		make debug
-#		- valgrind:				make valgrind
 #
 #   - dokumentace:		make doxygen
 #   - zabaleni:       make pack
@@ -53,9 +52,6 @@ edit:
 
 debug:
 	ddd ./$(APP)
-
-valgrind:
-	valgrind ./$(APP)
 
 
 doxygen:
