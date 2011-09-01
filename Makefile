@@ -8,7 +8,6 @@
 #   - spusteni:				make run
 #   - editace:       	make edit
 #		- debugovani: 		make debug
-#		- valgrind:				make valgrind
 #
 #   - dokumentace:		make doxygen
 #   - zabaleni:       make pack
@@ -37,7 +36,7 @@ TEST=test
 TESTS=tests
 
 # soubory pro vytvoreni archivu
-PACK=$(APP).c Makefile *.txt Doxyfile
+PACK=$(APP).c Makefile *.txt Doxyfile documentation.pdf
 
 
 all: $(APP)
@@ -53,9 +52,6 @@ edit:
 
 debug:
 	ddd ./$(APP)
-
-valgrind:
-	valgrind ./$(APP)
 
 
 doxygen:
