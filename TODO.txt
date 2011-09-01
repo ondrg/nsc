@@ -1,3 +1,4 @@
 TODO
+ * vymyslet efektivnejsi algoritmus pro univerzalni prevod
  * misto navratovych hodnot pouzivat errno http://linux.die.net/man/3/errno
  * (?) pouzit "static inline" funkce kde je to mozne
