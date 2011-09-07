@@ -33,6 +33,12 @@ real    98m8.607s
 user    96m40.230s
 sys     0m0.004s
 
+-- 10 000 000 (virtualmaster)
+
+real    10566m5.831s
+user    10397m7.911s
+sys     0m0.956s
+
 
 === Druha verze ===
 
