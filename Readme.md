@@ -1,6 +1,8 @@
 Number System Converter / Konvertor číselných soustav
 =====================================================
 
+[![Build Status](https://travis-ci.org/ondrg/nsc.png?branch=master)](https://travis-ci.org/ondrg/nsc)
+
 Základní informace
 ------------------
 
