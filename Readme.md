@@ -24,6 +24,14 @@ Např.: `[1011]2=10`
 `Z2` = výstupní soustava  
 Např.: `[11]10`
 
+Spuštění v Dockeru
+------------------
+
+```bash
+$ docker build --tag=nsc .
+$ echo '[42]10=2' | docker run -i --rm nsc
+```
+
 Reprezentace čísel
 ------------------
 
