@@ -44,6 +44,9 @@ all: $(APP)
 $(APP): $(APP).c
 	$(CC) $(CFLAGS) -o $(APP) $(APP).c
 
+static: $(APP).c
+	$(CC) $(CFLAGS) -static -o $(APP) $(APP).c
+
 run:
 	./$(APP)
 
