@@ -7,4 +7,4 @@ RUN make static
 FROM scratch
 
 COPY --from=build /usr/src/nsc/nsc /bin/nsc
-CMD ["/bin/nsc"]
+ENTRYPOINT ["/bin/nsc"]
